@@ -2,6 +2,7 @@ import core
 import pyglet
 from pyglet.window import key
 from core import GameElement
+from random import randint
 import sys
 
 #### DO NOT TOUCH ####
@@ -9,152 +10,289 @@ GAME_BOARD = None
 DEBUG = False
 KEYBOARD = None
 PLAYER = None
+#PLAYER2 = None
 ######################
 
-GAME_WIDTH = 5
-GAME_HEIGHT = 5
+GAME_WIDTH = 7
+GAME_HEIGHT = 7
 
 #### Put class definitions here ####
 class Rock(GameElement):
-	IMAGE = "Rock"
-	SOLID = True
+    IMAGE = "Rock"
+    SOLID = True
+
+class Treasure(GameElement):
+    IMAGE = "Chest"
+    SOLID = True    
+
+    def interact(self, player):
+        if len(player.inventory_gems) >= 5:
+            if len(player.inventory_hearts) >= 1:
+                GAME_BOARD.draw_msg("YOU ARE A WINNERRRR!!!!")
+                self.cover_board()
+            else:
+                GAME_BOARD.draw_msg("MORE HEARTS!!")
+        else:
+            GAME_BOARD.draw_msg("YOU CANT OPEN THE TREASURE CHEST! MOAR GEMZ PLEEZ!")
+
+    def cover_board(self):
+        for x in range(0,GAME_WIDTH):
+            for y in range(0,GAME_HEIGHT):
+                existing_el = GAME_BOARD.get_el(x, y)
+                if not existing_el or not existing_el.SOLID:
+                    heart = Heart()
+                    GAME_BOARD.register(heart)
+                    GAME_BOARD.set_el(x, y, heart)
 
 class Character(GameElement):
-	IMAGE = "Cat"
+    IMAGE = "Cat"
+    SOLID = True
 
-	def next_pos(self, direction):
-		if direction == "up":
-			return (self.x, self.y - 1)
-		elif direction ==  "down":
-			return (self.x, self.y + 1)
-		elif direction == "left":
-			return (self.x - 1, self.y)
-		elif direction == "right":
-			return (self.x + 1, self.y)
-		return None
+    def next_pos(self, direction):
+        next_x = self.x
+        next_y = self.y
+        if direction == "up":
+            next_y -= 1
+        elif direction == "down":
+            next_y += 1
+        elif direction == "left":
+            next_x -= 1
+        elif direction == "right":
+            next_x += 1
 
-	def __init__(self):
-		GameElement.__init__(self)
-		self.inventory = []
+        # check if it went too far left or right, keep where it is if so
+        if next_x < 0 or next_x > GAME_WIDTH - 1:
+            next_x = self.x 
+        # check if it went too far down or up, keep where it is if so
+        if next_y < 0 or next_y > GAME_HEIGHT - 1:
+            next_y = self.y
+
+        return (next_x,next_y)
+        # if direction == "up":
+        #   return (self.x, self.y - 1)
+        # elif direction ==  "down":
+        #   return (self.x, self.y + 1)
+        # elif direction == "left":
+        #   return (self.x - 1, self.y)
+        # elif direction == "right":
+        #   return (self.x + 1, self.y)
+        # return None
+
+    def tell_inventory(self, message):
+        GAME_BOARD.draw_msg("%s You have %d items! %d gems and %d hearts." % 
+            (message, (len(self.inventory_gems) + len(self.inventory_hearts)),len(self.inventory_gems), len(self.inventory_hearts))) 
+
+
+    def __init__(self):
+        GameElement.__init__(self)
+        self.inventory_gems = []
+        self.inventory_hearts = []
+
+class Friend(Character):
+    IMAGE = "Princess"
+
+    def __init__(self):
+        Character.__init__(self)
+
+class Instructor(Character):
+    IMAGE = "Girl"
+    Solid = True
+
+    def interact(self, player):
+
+        Instructor_Number = randint(0, 2)
+        print "random number is",Instructor_Number
+
+        if Instructor_Number == 0 and len(player.inventory_gems) >= 1:
+            player.inventory_gems.pop()
+            player.tell_inventory("I AM LIZ! YOUR GEM IS MINE!!")
+        elif Instructor_Number == 1:
+            player.inventory_gems.append(Gem())
+            player.tell_inventory("I AM LIZ! A GEM FOR YOU!!")
+        else:
+            player.tell_inventory("I AM LIZ! THANKS FOR SAYING HI!!")
 
 class Gem(GameElement):
-	IMAGE = "BlueGem"
-	SOLID = False
+    IMAGE = "BlueGem"
+    SOLID = False
 
-	def interact(self, player):
-		player.inventory.append(self)
-		GAME_BOARD.draw_msg("You just acquired a gem! You have %d items!"%(len(player.inventory)))
+    def interact(self, player):
+        player.inventory_gems.append(self)
+        player.tell_inventory("You just acquired a gem!")
+        #GAME_BOARD.draw_msg("You just acquired a gem! You have %d items! %d gems and %d hearts." % ((len(player.inventory_gems) + len(player.inventory_hearts)),len(player.inventory_gems), len(player.inventory_hearts))) 
 
 class Rupie(GameElement):
-	IMAGE = "OrangeGem"
-	SOLID = False
+    IMAGE = "OrangeGem"
+    SOLID = False
 
-	def interact(self, player):
-		GAME_BOARD.del_el(player.x, player.y)
-		GAME_BOARD.set_el(0, 0, player)
-		print "should have just reset player to 0,0"
+    def interact(self, player):
+        # if direction:
+        # next_location = PLAYER.next_pos(direction)
+        # next_x = next_location[0]
+        # next_y = next_location[1]
+
+        GAME_BOARD.del_el(player.x, player.y)
+        GAME_BOARD.set_el(0, 0, player)
+        print "should have just reset player to 0,0"
+
+class Heart(GameElement):
+    IMAGE = "Heart"
+    SOLID = False
+
+    def interact(self, player):
+        player.inventory_hearts.append(self)
+        player.tell_inventory("You just got a heart!")
 
 ####   End class definitions    ####
 
 def keyboard_handler():
-	direction = None
+    direction = None
+    curr_player = None
 
-	if KEYBOARD[key.UP]:
-		GAME_BOARD.draw_msg("you pressed up")
-		direction = "up"
-		# next_y = PLAYER.y-1
-		# GAME_BOARD.del_el(PLAYER.x, PLAYER.y)
-		# GAME_BOARD.set_el(PLAYER.x, next_y, PLAYER)
-	elif KEYBOARD[key.DOWN]:
-		GAME_BOARD.draw_msg("you pressed down!")
-		direction = "down"
-		# next_y = PLAYER.y+1
-		# GAME_BOARD.del_el(PLAYER.x, PLAYER.y)
-		# GAME_BOARD.set_el(PLAYER.x, next_y, PLAYER)
-	elif KEYBOARD[key.RIGHT]:
-		GAME_BOARD.draw_msg("you pressed right!")
-		direction = "right"
-		# next_x = PLAYER.x+1
-		# GAME_BOARD.del_el(PLAYER.x, PLAYER.y)
-		# GAME_BOARD.set_el(next_x, PLAYER.y, PLAYER)
-	elif KEYBOARD[key.LEFT]:
-		GAME_BOARD.draw_msg("you pressed left!")
-		direction = "left"
-		# next_x = PLAYER.x-1
-		# GAME_BOARD.del_el(PLAYER.x, PLAYER.y)
-		# GAME_BOARD.set_el(next_x, PLAYER.y, PLAYER)
-	elif KEYBOARD[key.SPACE]:
-		GAME_BOARD.erase_msg()
+    if KEYBOARD[key.UP]:
+        direction = "up"
+        curr_player = PLAYER
+    elif KEYBOARD[key.DOWN]:
+        direction = "down"
+        curr_player = PLAYER
+    elif KEYBOARD[key.RIGHT]:
+        direction = "right"
+        curr_player = PLAYER
+    elif KEYBOARD[key.LEFT]:
+        direction = "left"
+        curr_player = PLAYER
+    elif KEYBOARD[key.I]:
+        direction = "up"
+        curr_player = PLAYER2
+    elif KEYBOARD[key.K]:
+        direction = "down"
+        curr_player = PLAYER2
+    elif KEYBOARD[key.L]:
+        direction = "right"
+        curr_player = PLAYER2
+    elif KEYBOARD[key.J]:
+        direction = "left"
+        curr_player = PLAYER2
+    elif KEYBOARD[key.SPACE]:
+        GAME_BOARD.erase_msg()
 
-	if direction:
-		next_location = PLAYER.next_pos(direction)
-		next_x = next_location[0]
-		next_y = next_location[1]
-		existing_el = GAME_BOARD.get_el(next_x, next_y)
-		if existing_el:
-			existing_el.interact(PLAYER)
-		if existing_el is None or not existing_el.SOLID:
-			#If there's nothing there or if the existing element is not solid, wlak through
-			GAME_BOARD.del_el(PLAYER.x, PLAYER.y)
-			GAME_BOARD.set_el(next_x, next_y, PLAYER)			
+    if direction:
+        next_location = curr_player.next_pos(direction)
+        next_x = next_location[0]
+        next_y = next_location[1]
+        existing_el = GAME_BOARD.get_el(next_x, next_y)
+        # if existing_el:
+        #   existing_el.interact(PLAYER)
+        if existing_el is None or not existing_el.SOLID:
+            #If there's nothing there or if the existing element is not solid, wlak through
+            GAME_BOARD.del_el(curr_player.x, curr_player.y)
+            GAME_BOARD.set_el(next_x, next_y, curr_player)
+        if existing_el:
+            existing_el.interact(curr_player)   
+
 
 def initialize():
     """Put game initialization code here"""
-    # rock1 = Rock() # Creating rock1 
-    # GAME_BOARD.register(rock1) # Registering rock1 on board
-    # GAME_BOARD.set_el(1,1,rock1) # setting rock1 on board at this coordinate
-
-    # # Initialize and register rock 2
-
-    # rock2 = Rock()
-    # GAME_BOARD.register(rock2)
-    # GAME_BOARD.set_el(2, 2, rock2)
-
-    # print "The first rock is at", (rock1.x,rock1.y) # print a string that states where the rock is based on x-y coordinates
-    # print "The second rock is at", (rock2.x, rock2.y)
-    # print "Rock 1 image", rock1.IMAGE
-    # print "Rock 2 image", rock2.IMAGE
 
     rock_positions = [
-    	(2, 1),
-    	(1, 2),
-    	(3, 2),
-    	(2, 3)
-    	# (1, 3),
-    	# (2, 2),
-    	# (3, 1),
-    	# (1, 1),
-    	# (3, 3)
+        (2, 1),
+        (1, 2),
+        (2, 3)
+        # (1, 3),
+        # (2, 2),
+        # (3, 1),
+        # (1, 1),
+        # (3, 3)
 
     ]
 
     rocks = []
 
     for pos in rock_positions:
-    	rock = Rock()
-    	GAME_BOARD.register(rock)
-    	GAME_BOARD.set_el(pos[0],pos[1],rock)
-    	rocks.append(rock)
+        rock = Rock()
+        GAME_BOARD.register(rock)
+        GAME_BOARD.set_el(pos[0],pos[1],rock)
+        rocks.append(rock)
 
     for rock in rocks:
-    	print rock
+        print rock
 
-	rocks[-1].SOLID = False
+    rocks[-1].SOLID = False
 
-	#initialize a gem
-	gem = Gem()
-	GAME_BOARD.register(gem)
-	GAME_BOARD.set_el(3,1,gem)
+    #initialize gems
+    gem_positions = [
+        (2, 3),
+        (2, 2),
+        (2, 4),
+        (4, 2),
+        (4, 3),
+        (4, 4)
+    ]
+    gems = []
 
-	gem2 = Rupie()
-	GAME_BOARD.register(gem2)
-	GAME_BOARD.set_el(1,1,gem2)
+    for i in gem_positions:
+        gem = Gem()
+        GAME_BOARD.register(gem)
+        GAME_BOARD.set_el(i[0],i[1],gem)
+        gems.append(gem)
 
-	# Initialize a girl character in the character class
-	global PLAYER
-	PLAYER = Character()
-	GAME_BOARD.register(PLAYER)
-	GAME_BOARD.set_el(2, 2, PLAYER)
-	print PLAYER
 
-	GAME_BOARD.draw_msg("This game is hella awesome.")
+    chest = Treasure()
+    GAME_BOARD.register(chest)
+    GAME_BOARD.set_el(0,2,chest)
+
+    Liz = Instructor()
+    GAME_BOARD.register(Liz)
+    GAME_BOARD.set_el(6, 3,Liz)
+
+    #initialize Rupie
+    rupie_positions = [
+        (3, 2),
+        (3, 4)
+
+    ]
+
+    rupies = []
+
+    for pos in rupie_positions:
+        rupie = Rupie()
+        GAME_BOARD.register(rupie)
+        GAME_BOARD.set_el(pos[0],pos[1],rupie)
+        rupies.append(rupie)
+
+    for rupie in rupies:
+        print rupie
+
+
+    #initalize hearts
+    heart_positions = [
+        (3,3),
+        (6,6)
+    ]
+
+    hearts = []
+
+    for pos in heart_positions:
+        heart = Heart()
+        GAME_BOARD.register(heart)
+        GAME_BOARD.set_el(pos[0], pos[1], heart)
+        hearts.append(heart)
+
+    for heart in hearts:
+        print heart
+
+
+    # Initialize a girl character in the character class
+    global PLAYER
+    PLAYER = Character()
+    GAME_BOARD.register(PLAYER)
+    GAME_BOARD.set_el(0, 6, PLAYER)
+    print PLAYER
+
+    global PLAYER2
+    PLAYER2 = Friend()
+    GAME_BOARD.register(PLAYER2)
+    GAME_BOARD.set_el(6,0,PLAYER2)
+    print PLAYER2
+
+    GAME_BOARD.draw_msg("This game is hella awesome.")
