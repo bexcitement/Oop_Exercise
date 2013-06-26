@@ -172,6 +172,12 @@ class Board(object):
                 self.del_el(i,j)
 
 
+
+def do_nothing(self):
+    pass
+
+
+
 class Obstacle(GameElement):
     pass
 

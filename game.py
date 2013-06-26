@@ -20,6 +20,48 @@ BORIS = None
 GAME_WIDTH = 7
 GAME_HEIGHT = 7
 
+
+# INitialize level 2
+def initalize_level_two():
+
+# Key positions
+    block_positions = [
+        (1,1),
+        (5,5)
+        ]
+
+    blocks = []
+
+    for pos in block_positions:
+        block = Key()
+        GAME_BOARD.register(block)
+        GAME_BOARD.set_el(pos[0], pos[1], block)
+        blocks.append(block)
+
+    for block in blocks:
+        print block
+
+# Open Door position
+
+    door = Door()
+    GAME_BOARD.register(door)
+    GAME_BOARD.set_el(3, 3,door)
+
+    #reset players at corners
+    GAME_BOARD.set_el(6,0,PLAYER)
+    GAME_BOARD.set_el(0,6,PLAYER2)
+
+    GAME_BOARD.draw_msg("Congrats!! Welcome to Level 2!")
+
+def is_in_bounds(x,y):
+    #check if dx or dy will put the key out of bounds
+    if x < 0 or x > GAME_WIDTH - 1:
+        return False
+    # check if it went too far down or up, keep where it is if so
+    if y < 0 or y > GAME_HEIGHT - 1:
+        return False
+    return True
+
 #### Put class definitions here ####
 class Rock(GameElement):
     IMAGE = "Rock"
@@ -35,6 +77,11 @@ class Treasure(GameElement):
                 GAME_BOARD.draw_msg("YOU ARE A WINNERRRR!!!!")
                 GAME_BOARD.clear_board()
                 player.inventory_gems = []
+                global BORIS
+                BORIS.update = do_nothing
+
+                initalize_level_two()
+
                 
             else:
                 GAME_BOARD.draw_msg("MORE HEARTS!!")
@@ -49,6 +96,32 @@ class Treasure(GameElement):
                     heart = Heart()
                     GAME_BOARD.register(heart)
                     GAME_BOARD.set_el(x, y, heart)
+
+class Key(GameElement):
+    IMAGE = "Key"
+    SOLID = True 
+
+    def interact(self, player):
+        dx = self.x - player.x
+        dy = self.y - player.y
+
+        #check if dx or dy will put the key out of bounds
+        if is_in_bounds(self.x + dx, self.y + dy):
+            #move the key by dx and dy
+            GAME_BOARD.del_el(self.x, self.y)
+            GAME_BOARD.set_el(self.x + dx, self.y + dy, self)
+            #move the player by dx and dy
+            GAME_BOARD.del_el(player.x, player.y)
+            GAME_BOARD.set_el(player.x + dx, player.y + dy, player)
+    
+
+class Door(GameElement):
+    IMAGE = "DoorClosed"
+    SOLID = True
+
+    def openSesame(self):
+        self.IMAGE = "DoorOpen"
+        SOLID = True
 
 class Character(GameElement):
     IMAGE = "Cat"
@@ -99,6 +172,9 @@ class Friend(Character):
 
     def __init__(self):
         Character.__init__(self)
+
+def do_nothing(self):
+    pass
 
 class Enemy(Character):
     IMAGE = "Boy"
@@ -378,3 +454,4 @@ def initialize():
     print BORIS
 
     GAME_BOARD.draw_msg("This game is hella awesome.")
+
