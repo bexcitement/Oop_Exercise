@@ -166,6 +166,11 @@ class Board(object):
                 if el:
                     self.draw_active(el.sprite, x, y)
 
+    def clear_board(self):
+        for i in range(0,self.width):
+            for j in range(0,self.height):
+                self.del_el(i,j)
+
 
 class Obstacle(GameElement):
     pass

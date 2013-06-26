@@ -1,3 +1,5 @@
+
+
 import core
 import pyglet
 from pyglet.window import key
@@ -31,7 +33,9 @@ class Treasure(GameElement):
         if len(player.inventory_gems) >= 5:
             if len(player.inventory_hearts) >= 1:
                 GAME_BOARD.draw_msg("YOU ARE A WINNERRRR!!!!")
-                self.cover_board()
+                GAME_BOARD.clear_board()
+                player.inventory_gems = []
+                
             else:
                 GAME_BOARD.draw_msg("MORE HEARTS!!")
         else:
@@ -103,8 +107,46 @@ class Enemy(Character):
         Character.__init__(self)
 
     def interact(self, player):
+        self.inventory_gems = player. inventory_gems
         player.inventory_gems = []
         player.tell_inventory("The evil boy took all your gems!")
+        
+        # Taking Boris' gems and put them in the top row.
+        gem_position = 0
+
+        # we know this will break if there are lots of things in the top row. 
+        while self.inventory_gems != []:
+            gem = self.inventory_gems.pop()
+            if GAME_BOARD.get_el(gem_position, 0) == None:
+                GAME_BOARD.set_el(gem_position,0,gem)
+            else:
+                self.inventory_gems.append(gem)
+
+            gem_position += 1
+
+    
+    def update(self, dt):
+        if int(time.time() * 10) % 10== 0:
+            boris_dir = randint(0,4)
+            boris_next = None
+            if boris_dir == 0:
+                print "moving up"
+                boris_next = BORIS.next_pos("up")
+            elif boris_dir == 1:
+                print "moving down"
+                boris_next = BORIS.next_pos("down")
+            elif boris_dir == 2:
+                print "moving left"
+                boris_next = BORIS.next_pos("left")
+            else:
+                print "moving right"
+                boris_next = BORIS.next_pos("right")
+
+            #move BORIS to his next position
+            existing_el = GAME_BOARD.get_el(boris_next[0],boris_next[1])
+            if existing_el is None:
+                GAME_BOARD.del_el(BORIS.x, BORIS.y)
+                GAME_BOARD.set_el(boris_next[0], boris_next[1], BORIS)
 
 class Instructor(Character):
     IMAGE = "Girl"
@@ -201,28 +243,27 @@ def keyboard_handler():
             existing_el.interact(curr_player)   
 
 
-    if int(time.time()*1000) % 1000 == 0:
-        print "moving boris"
-        boris_dir = randint(0,4)
-        boris_next = None
-        if boris_dir == 0:
-            print "moving up"
-            boris_next = BORIS.next_pos("up")
-        elif boris_dir == 1:
-            print "moving down"
-            boris_next = BORIS.next_pos("down")
-        elif boris_dir == 2:
-            print "moving left"
-            boris_next = BORIS.next_pos("left")
-        else:
-            print "moving right"
-            boris_next = BORIS.next_pos("right")
+    # if int(time.time() * 10) % 10== 0:
+    #     boris_dir = randint(0,4)
+    #     boris_next = None
+    #     if boris_dir == 0:
+    #         print "moving up"
+    #         boris_next = BORIS.next_pos("up")
+    #     elif boris_dir == 1:
+    #         print "moving down"
+    #         boris_next = BORIS.next_pos("down")
+    #     elif boris_dir == 2:
+    #         print "moving left"
+    #         boris_next = BORIS.next_pos("left")
+    #     else:
+    #         print "moving right"
+    #         boris_next = BORIS.next_pos("right")
 
-        #move BORIS to his next position
-        existing_el = GAME_BOARD.get_el(boris_next[0],boris_next[1])
-        if existing_el is None:
-            GAME_BOARD.del_el(BORIS.x, BORIS.y)
-            GAME_BOARD.set_el(boris_next[0], boris_next[1], BORIS)
+    #     #move BORIS to his next position
+    #     existing_el = GAME_BOARD.get_el(boris_next[0],boris_next[1])
+    #     if existing_el is None:
+    #         GAME_BOARD.del_el(BORIS.x, BORIS.y)
+    #         GAME_BOARD.set_el(boris_next[0], boris_next[1], BORIS)
 
 
 
