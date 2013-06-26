@@ -4,13 +4,15 @@ from pyglet.window import key
 from core import GameElement
 from random import randint
 import sys
+import time
 
 #### DO NOT TOUCH ####
 GAME_BOARD = None
 DEBUG = False
 KEYBOARD = None
 PLAYER = None
-#PLAYER2 = None
+PLAYER2 = None
+BORIS = None
 ######################
 
 GAME_WIDTH = 7
@@ -93,6 +95,16 @@ class Friend(Character):
 
     def __init__(self):
         Character.__init__(self)
+
+class Enemy(Character):
+    IMAGE = "Boy"
+
+    def __init__(self):
+        Character.__init__(self)
+
+    def interact(self, player):
+        player.inventory_gems = []
+        player.tell_inventory("The evil boy took all your gems!")
 
 class Instructor(Character):
     IMAGE = "Girl"
@@ -181,8 +193,6 @@ def keyboard_handler():
         next_x = next_location[0]
         next_y = next_location[1]
         existing_el = GAME_BOARD.get_el(next_x, next_y)
-        # if existing_el:
-        #   existing_el.interact(PLAYER)
         if existing_el is None or not existing_el.SOLID:
             #If there's nothing there or if the existing element is not solid, wlak through
             GAME_BOARD.del_el(curr_player.x, curr_player.y)
@@ -191,33 +201,58 @@ def keyboard_handler():
             existing_el.interact(curr_player)   
 
 
+    if int(time.time()*1000) % 1000 == 0:
+        print "moving boris"
+        boris_dir = randint(0,4)
+        boris_next = None
+        if boris_dir == 0:
+            print "moving up"
+            boris_next = BORIS.next_pos("up")
+        elif boris_dir == 1:
+            print "moving down"
+            boris_next = BORIS.next_pos("down")
+        elif boris_dir == 2:
+            print "moving left"
+            boris_next = BORIS.next_pos("left")
+        else:
+            print "moving right"
+            boris_next = BORIS.next_pos("right")
+
+        #move BORIS to his next position
+        existing_el = GAME_BOARD.get_el(boris_next[0],boris_next[1])
+        if existing_el is None:
+            GAME_BOARD.del_el(BORIS.x, BORIS.y)
+            GAME_BOARD.set_el(boris_next[0], boris_next[1], BORIS)
+
+
+
 def initialize():
     """Put game initialization code here"""
 
-    rock_positions = [
-        (2, 1),
-        (1, 2),
-        (2, 3)
-        # (1, 3),
-        # (2, 2),
-        # (3, 1),
-        # (1, 1),
-        # (3, 3)
+    # rock_positions = [
+    #     (2, 1),
+    #     (1, 2),
+    #     (2, 3)
+    #     # (1, 3),
+    #     # (2, 2),
+    #     # (3, 1),
+    #     # (1, 1),
+    #     # (3, 3)
 
-    ]
+    # ]
 
-    rocks = []
+    # rocks = []
 
-    for pos in rock_positions:
-        rock = Rock()
-        GAME_BOARD.register(rock)
-        GAME_BOARD.set_el(pos[0],pos[1],rock)
-        rocks.append(rock)
+    # for pos in rock_positions:
+    #     rock = Rock()
+    #     GAME_BOARD.register(rock)
+    #     GAME_BOARD.set_el(pos[0],pos[1],rock)
+    #     rocks.append(rock)
 
-    for rock in rocks:
-        print rock
+    # for rock in rocks:
+    #     print rock
 
-    rocks[-1].SOLID = False
+    # rocks[-1].SOLID = False
 
     #initialize gems
     gem_positions = [
@@ -294,5 +329,11 @@ def initialize():
     GAME_BOARD.register(PLAYER2)
     GAME_BOARD.set_el(6,0,PLAYER2)
     print PLAYER2
+
+    global BORIS
+    BORIS = Enemy()
+    GAME_BOARD.register(BORIS)
+    GAME_BOARD.set_el(3,6,BORIS)
+    print BORIS
 
     GAME_BOARD.draw_msg("This game is hella awesome.")
