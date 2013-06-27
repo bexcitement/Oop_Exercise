@@ -3,6 +3,7 @@
 import pyglet
 from pyglet.window import key
 from core import GameElement
+from game import Heart
 
 SCREEN_X = 800
 SCREEN_Y = 700
@@ -171,10 +172,15 @@ class Board(object):
             for j in range(0,self.height):
                 self.del_el(i,j)
 
+    def cover_board_in_hearts(self):
+        for x in range(0,self.width):
+            for y in range(0,self.height):
+                existing_el = self.get_el(x, y)
+                if not existing_el or not existing_el.SOLID:
+                    heart = Heart()
+                    self.register(heart)
+                    self.set_el(x, y, heart)
 
-
-def do_nothing(self):
-    pass
 
 
 

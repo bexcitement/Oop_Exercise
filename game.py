@@ -43,7 +43,7 @@ def initalize_level_two():
 
 # Open Door position
 
-    door = Door()
+    door = DoorClosed()
     GAME_BOARD.register(door)
     GAME_BOARD.set_el(3, 3,door)
 
@@ -88,14 +88,7 @@ class Treasure(GameElement):
         else:
             GAME_BOARD.draw_msg("YOU CANT OPEN THE TREASURE CHEST! MOAR GEMZ PLEEZ!")
 
-    def cover_board(self):
-        for x in range(0,GAME_WIDTH):
-            for y in range(0,GAME_HEIGHT):
-                existing_el = GAME_BOARD.get_el(x, y)
-                if not existing_el or not existing_el.SOLID:
-                    heart = Heart()
-                    GAME_BOARD.register(heart)
-                    GAME_BOARD.set_el(x, y, heart)
+
 
 class Key(GameElement):
     IMAGE = "Key"
@@ -107,21 +100,44 @@ class Key(GameElement):
 
         #check if dx or dy will put the key out of bounds
         if is_in_bounds(self.x + dx, self.y + dy):
-            #move the key by dx and dy
-            GAME_BOARD.del_el(self.x, self.y)
-            GAME_BOARD.set_el(self.x + dx, self.y + dy, self)
+            #check if the new place has a door
+            next_thing = GAME_BOARD.get_el(self.x + dx, self.y + dy)
+            if next_thing != None and type(next_thing) == DoorClosed:
+                next_thing.open_door()
+                # GAME_BOARD.del_el(self.x + dx, self.y + dy)
+                # next_thing = DoorOpened()
+                # GAME_BOARD.register(next_thing)
+                # GAME_BOARD.set_el(self.x + dx, self.y + dy, next_thing)
+                # GAME_BOARD.del_el(self.x, self.y)
+            else:
+                #move the key by dx and dy
+                GAME_BOARD.del_el(self.x, self.y)
+                GAME_BOARD.set_el(self.x + dx, self.y + dy, self)
             #move the player by dx and dy
             GAME_BOARD.del_el(player.x, player.y)
             GAME_BOARD.set_el(player.x + dx, player.y + dy, player)
     
+class DoorOpened(GameElement):
+    IMAGE = "DoorOpen"
+    SOLID = True
 
-class Door(GameElement):
+class DoorClosed(GameElement):
     IMAGE = "DoorClosed"
     SOLID = True
 
-    def openSesame(self):
-        self.IMAGE = "DoorOpen"
-        SOLID = True
+    def open_door(self):
+        GAME_BOARD.del_el(self.x, self.y)
+        tempx = self.x
+        tempy = self.y
+        self  = DoorOpened()
+        GAME_BOARD.register(self)
+        GAME_BOARD.set_el(tempx, tempy, self)
+        GAME_BOARD.draw_msg("You opened the door with the key! You are the WINNER!.")
+        GAME_BOARD.cover_board_in_hearts()
+
+
+    def interact(self, thing):
+        print "you cant open the door without the key"
 
 class Character(GameElement):
     IMAGE = "Cat"
